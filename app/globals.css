@@ -1012,6 +1012,18 @@ select:focus, input[type="number"]:focus, input[type="text"]:focus, textarea:foc
   color: var(--accent-primary);
 }
 
+.btn-xs.btn-primary {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  border-color: #3b82f6;
+  color: #ffffff;
+}
+
+.btn-xs.btn-primary:hover {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
 .btn-xs.btn-danger:hover {
   border-color: var(--accent-danger);
   color: var(--accent-danger);
