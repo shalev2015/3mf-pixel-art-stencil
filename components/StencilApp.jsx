@@ -1364,9 +1364,9 @@ export default function StencilApp() {
             <section className="menu-section">
               <div className="menu-section-header">
                 <div>
-                  <h2>Starter Arcade Templates</h2>
+                  <h2>Templates</h2>
                   <p className="menu-section-sub">
-                    Click any template to create a new named project from classic MakeCode Arcade sprites
+                    Click any template to create a new named project
                   </p>
                 </div>
               </div>
