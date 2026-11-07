@@ -3,7 +3,9 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   STORAGE_KEY,
+  CUSTOM_PALETTES_STORAGE_KEY,
   DEFAULT_MAKECODE_PALETTE,
+  PRESET_PALETTES,
   PRESET_SPRITES,
   getDefaultSettings,
   generateId,
@@ -24,7 +26,25 @@ import {
   mat4Multiply
 } from '@/lib/stencilEngine';
 
-const THEME_STORAGE_KEY = 'makecode_arcade_3mf_stenciler_theme';
+const THEME_STORAGE_KEY = 'arcade_3mf_stenciler_theme';
+
+/**
+ * Renders the 15-color horizontal swatch strip (indices 1..15) for a palette
+ */
+function PaletteSwatchStrip({ hexes, className = '' }) {
+  const colors = (hexes || PRESET_PALETTES[0].hexes).slice(1, 16);
+  return (
+    <span className={`palette-swatch-strip ${className}`} aria-hidden="true">
+      {colors.map((hex, i) => (
+        <span
+          key={i}
+          className="palette-strip-cell"
+          style={{ backgroundColor: hex }}
+        />
+      ))}
+    </span>
+  );
+}
 
 /**
  * Helper component to render a 2D pixel grid thumbnail on a <canvas>
@@ -79,8 +99,19 @@ export default function StencilApp() {
   const [showNewModal, setShowNewModal] = useState(false);
   const [newProjName, setNewProjName] = useState('Duck');
   const [newProjTemplate, setNewProjTemplate] = useState('duck');
+  const [newProjPaletteId, setNewProjPaletteId] = useState('arcade');
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [copyButtonText, setCopyButtonText] = useState('Copy JS');
+
+  // Custom & Preset Color Palettes State
+  const [customPalettes, setCustomPalettes] = useState([]);
+  const [activePaletteId, setActivePaletteId] = useState('arcade');
+  const [showPaletteModal, setShowPaletteModal] = useState(false);
+  const [modalPaletteId, setModalPaletteId] = useState('arcade');
+  const [modalHexes, setModalHexes] = useState(() => [...PRESET_PALETTES[0].hexes]);
+  const [showPaletteDropdown, setShowPaletteDropdown] = useState(false);
+  const [isRenamingPalette, setIsRenamingPalette] = useState(false);
+  const [renamePaletteText, setRenamePaletteText] = useState('');
 
   // Active Project Editor State
   const [codeText, setCodeText] = useState(PRESET_SPRITES.duck.code);
@@ -90,6 +121,18 @@ export default function StencilApp() {
   const [palette, setPalette] = useState(() => DEFAULT_MAKECODE_PALETTE.map(c => ({ ...c })));
   const [selectedBrushColor, setSelectedBrushColor] = useState(2);
   const [hoverInfo, setHoverInfo] = useState('Click or drag on grid to paint pixels');
+
+  const allPalettes = useMemo(() => [...PRESET_PALETTES, ...customPalettes], [customPalettes]);
+
+  const activePaletteObj = useMemo(() => {
+    const byId = allPalettes.find(p => p.id === activePaletteId);
+    if (byId) return byId;
+    return PRESET_PALETTES[0];
+  }, [allPalettes, activePaletteId]);
+
+  const modalSelectedPaletteObj = useMemo(() => {
+    return allPalettes.find(p => p.id === modalPaletteId) || PRESET_PALETTES[0];
+  }, [allPalettes, modalPaletteId]);
 
   // Stencil Geometry Settings
   const [settings, setSettings] = useState(getDefaultSettings);
@@ -122,13 +165,27 @@ export default function StencilApp() {
     theme: 'dark'
   });
 
-  // Load saved theme & projects from localStorage on client mount
+  // Load saved theme, custom palettes & projects from localStorage on client mount
   useEffect(() => {
     try {
       const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
       if (savedTheme === 'light' || savedTheme === 'dark') {
         setTheme(savedTheme);
         document.documentElement.setAttribute('data-theme', savedTheme);
+      }
+    } catch (e) {}
+
+    try {
+      const rawCustomPalettes = localStorage.getItem(CUSTOM_PALETTES_STORAGE_KEY);
+      if (rawCustomPalettes) {
+        const parsedCustom = JSON.parse(rawCustomPalettes);
+        if (Array.isArray(parsedCustom)) {
+          setCustomPalettes(
+            parsedCustom.filter(
+              cp => cp && cp.id && cp.name && Array.isArray(cp.hexes) && cp.hexes.length === 16
+            )
+          );
+        }
       }
     } catch (e) {}
 
@@ -234,6 +291,16 @@ export default function StencilApp() {
     }
   }, []);
 
+  // Persist custom palettes array to localStorage whenever it changes
+  const saveCustomPalettesList = useCallback(nextCustomPalettes => {
+    setCustomPalettes(nextCustomPalettes);
+    try {
+      localStorage.setItem(CUSTOM_PALETTES_STORAGE_KEY, JSON.stringify(nextCustomPalettes));
+    } catch (e) {
+      console.warn('Could not save custom palettes to localStorage:', e);
+    }
+  }, []);
+
   // Auto-save active project changes back into `projects`
   useEffect(() => {
     if (screen !== 'editor' || !activeProjectId) return;
@@ -245,6 +312,7 @@ export default function StencilApp() {
         name: (activeProjectName || 'Untitled Project').trim() || 'Untitled Project',
         updatedAt: Date.now(),
         code: codeText,
+        paletteId: activePaletteId,
         paletteHexes: palette.map(c => c.hex),
         settings: { ...settings }
       };
@@ -255,7 +323,7 @@ export default function StencilApp() {
       } catch (e) {}
       return next;
     });
-  }, [activeProjectId, activeProjectName, codeText, palette, settings, screen]);
+  }, [activeProjectId, activeProjectName, codeText, activePaletteId, palette, settings, screen]);
 
   // Compute all 3D stencil layers & multi-color plaque meshes
   const { layers, plaqueMeshes } = useMemo(() => {
@@ -784,16 +852,202 @@ export default function StencilApp() {
   const openProject = useCallback(proj => {
     setActiveProjectId(proj.id);
     setActiveProjectName(proj.name);
+    const resolvedHexes = DEFAULT_MAKECODE_PALETTE.map((c, idx) =>
+      proj.paletteHexes && proj.paletteHexes[idx] ? proj.paletteHexes[idx] : c.hex
+    );
     setPalette(
       DEFAULT_MAKECODE_PALETTE.map((c, idx) => ({
         ...c,
-        hex: (proj.paletteHexes && proj.paletteHexes[idx]) ? proj.paletteHexes[idx] : c.hex
+        hex: resolvedHexes[idx]
       }))
     );
+
+    if (proj.paletteId && allPalettes.some(p => p.id === proj.paletteId)) {
+      setActivePaletteId(proj.paletteId);
+    } else {
+      const matched = allPalettes.find(p =>
+        p.hexes.slice(1, 16).every((h, i) => h.toLowerCase() === (resolvedHexes[i + 1] || '').toLowerCase())
+      );
+      setActivePaletteId(matched ? matched.id : 'arcade');
+    }
+
     setSettings({ ...getDefaultSettings(), ...(proj.settings || {}) });
     applyCodeText(proj.code || PRESET_SPRITES.duck.code);
     setScreen('editor');
-  }, [applyCodeText]);
+  }, [applyCodeText, allPalettes]);
+
+  // ============================================================================
+  // COLOR PALETTE MODAL & CUSTOM PALETTE HANDLERS
+  // ============================================================================
+
+  const openColorPaletteModal = () => {
+    const currentHexes =
+      screen === 'editor'
+        ? palette.map(c => c.hex.toUpperCase())
+        : [...(activePaletteObj?.hexes || PRESET_PALETTES[0].hexes)];
+    setModalPaletteId(activePaletteId || 'arcade');
+    setModalHexes(currentHexes);
+    setShowPaletteDropdown(false);
+    setIsRenamingPalette(false);
+    setShowPaletteModal(true);
+  };
+
+  const handleSelectModalPalette = palObj => {
+    setModalPaletteId(palObj.id);
+    setModalHexes(palObj.hexes.map(h => h.toUpperCase()));
+    setShowPaletteDropdown(false);
+    setIsRenamingPalette(false);
+  };
+
+  const handleCreateNewCustomPalette = () => {
+    const nextNum = customPalettes.length + 1;
+    const newId = `custom_${generateId()}`;
+    const newPal = {
+      id: newId,
+      name: `Custom ${nextNum}`,
+      isPreset: false,
+      hexes: modalHexes.map(h => h.toUpperCase())
+    };
+    const nextCustomList = [...customPalettes, newPal];
+    saveCustomPalettesList(nextCustomList);
+    setModalPaletteId(newId);
+    setRenamePaletteText(newPal.name);
+    setIsRenamingPalette(true);
+    setShowPaletteDropdown(false);
+  };
+
+  const handleStartRenamePalette = () => {
+    const currentObj = allPalettes.find(p => p.id === modalPaletteId);
+    if (!currentObj) return;
+    if (currentObj.isPreset) {
+      // Fork preset into a custom palette so it can be named & saved
+      const newId = `custom_${generateId()}`;
+      const forkedName = `${currentObj.name} Custom`;
+      const newPal = {
+        id: newId,
+        name: forkedName,
+        isPreset: false,
+        hexes: modalHexes.map(h => h.toUpperCase())
+      };
+      saveCustomPalettesList([...customPalettes, newPal]);
+      setModalPaletteId(newId);
+      setRenamePaletteText(forkedName);
+      setIsRenamingPalette(true);
+    } else {
+      setRenamePaletteText(currentObj.name);
+      setIsRenamingPalette(true);
+    }
+    setShowPaletteDropdown(false);
+  };
+
+  const handleCommitRenamePalette = () => {
+    const trimmed = renamePaletteText.trim();
+    if (trimmed) {
+      const updated = customPalettes.map(cp =>
+        cp.id === modalPaletteId ? { ...cp, name: trimmed } : cp
+      );
+      saveCustomPalettesList(updated);
+    }
+    setIsRenamingPalette(false);
+  };
+
+  const handleDeleteCustomPalette = () => {
+    const currentObj = customPalettes.find(p => p.id === modalPaletteId);
+    if (!currentObj) return;
+    const remaining = customPalettes.filter(p => p.id !== modalPaletteId);
+    saveCustomPalettesList(remaining);
+    const fallback = PRESET_PALETTES[0];
+    setModalPaletteId(fallback.id);
+    setModalHexes([...fallback.hexes]);
+    if (activePaletteId === currentObj.id) {
+      setActivePaletteId(fallback.id);
+    }
+    setIsRenamingPalette(false);
+  };
+
+  const handleModalColorChange = (colorIdx, rawVal) => {
+    setModalHexes(prev => {
+      const next = [...prev];
+      next[colorIdx] = rawVal;
+      return next;
+    });
+  };
+
+  const handleSwapModalColors = (idxA, idxB) => {
+    if (idxA < 1 || idxA > 15 || idxB < 1 || idxB > 15) return;
+    setModalHexes(prev => {
+      const next = [...prev];
+      const tmp = next[idxA];
+      next[idxA] = next[idxB];
+      next[idxB] = tmp;
+      return next;
+    });
+  };
+
+  const handleResetModalPalette = () => {
+    const targetObj = allPalettes.find(p => p.id === modalPaletteId) || PRESET_PALETTES[0];
+    setModalHexes(targetObj.hexes.map(h => h.toUpperCase()));
+  };
+
+  const handleApplyModalPalette = () => {
+    const sanitizedHexes = modalHexes.map((h, i) => {
+      if (i === 0) return '#000000';
+      const clean = String(h || '').trim();
+      return /^#[0-9A-Fa-f]{6}$/.test(clean)
+        ? clean.toUpperCase()
+        : PRESET_PALETTES[0].hexes[i];
+    });
+
+    let targetPaletteId = modalPaletteId;
+    const selectedObj = allPalettes.find(p => p.id === modalPaletteId) || PRESET_PALETTES[0];
+
+    const isModifiedFromSelected = selectedObj.hexes
+      .slice(1, 16)
+      .some((h, idx) => h.toUpperCase() !== sanitizedHexes[idx + 1].toUpperCase());
+
+    if (!selectedObj.isPreset) {
+      // Save updated colors to this custom palette so all projects can use it
+      const nextCustom = customPalettes.map(cp =>
+        cp.id === selectedObj.id ? { ...cp, hexes: sanitizedHexes } : cp
+      );
+      saveCustomPalettesList(nextCustom);
+    } else if (isModifiedFromSelected) {
+      // Automatically save modified preset as a new reusable custom palette
+      const newId = `custom_${generateId()}`;
+      const newCustomPal = {
+        id: newId,
+        name: `${selectedObj.name} Custom`,
+        isPreset: false,
+        hexes: sanitizedHexes
+      };
+      saveCustomPalettesList([...customPalettes, newCustomPal]);
+      targetPaletteId = newId;
+    }
+
+    setActivePaletteId(targetPaletteId);
+    setNewProjPaletteId(targetPaletteId);
+    setPalette(
+      DEFAULT_MAKECODE_PALETTE.map((c, idx) => ({
+        ...c,
+        hex: sanitizedHexes[idx] || c.hex
+      }))
+    );
+    setShowPaletteModal(false);
+    setShowPaletteDropdown(false);
+    setIsRenamingPalette(false);
+  };
+
+  const handleQuickSelectPalette = palId => {
+    const found = allPalettes.find(p => p.id === palId);
+    if (!found) return;
+    setActivePaletteId(found.id);
+    setPalette(
+      DEFAULT_MAKECODE_PALETTE.map((c, idx) => ({
+        ...c,
+        hex: found.hexes[idx] || c.hex
+      }))
+    );
+  };
 
   const handleCreateNewProject = e => {
     e.preventDefault();
@@ -806,12 +1060,15 @@ export default function StencilApp() {
       initialCode = PRESET_SPRITES[newProjTemplate].code;
     }
 
+    const chosenPal = allPalettes.find(p => p.id === newProjPaletteId) || PRESET_PALETTES[0];
+
     const newProj = {
       id: generateId(),
       name: (newProjName || 'Untitled Stencil Project').trim() || 'Untitled Stencil Project',
       updatedAt: Date.now(),
       code: initialCode,
-      paletteHexes: DEFAULT_MAKECODE_PALETTE.map(c => c.hex),
+      paletteId: chosenPal.id,
+      paletteHexes: [...chosenPal.hexes],
       settings: getDefaultSettings()
     };
 
@@ -829,6 +1086,7 @@ export default function StencilApp() {
       name: `${orig.name} (Copy)`,
       updatedAt: Date.now(),
       code: orig.code,
+      paletteId: orig.paletteId || 'arcade',
       paletteHexes: [...(orig.paletteHexes || DEFAULT_MAKECODE_PALETTE.map(c => c.hex))],
       settings: { ...getDefaultSettings(), ...(orig.settings || {}) }
     };
@@ -1201,6 +1459,17 @@ export default function StencilApp() {
 
             <div className="header-actions">
               {renderThemeToggleButton()}
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={openColorPaletteModal}
+                title="Browse preset color palettes or create your own custom palettes"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10c1.38 0 2.5-1.12 2.5-2.5 0-.61-.23-1.2-.64-1.67-.08-.1-.13-.21-.13-.33 0-.28.22-.5.5-.5H16c3.31 0 6-2.69 6-6 0-4.96-4.49-9-10-9zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 8 6.5 8 8 8.67 8 9.5 7.33 11 6.5 11zm3-4C8.67 7 8 6.33 8 5.5S8.67 4 9.5 4s1.5.67 1.5 1.5S10.33 7 9.5 7zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 4 14.5 4s1.5.67 1.5 1.5S15.33 7 14.5 7zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 8 17.5 8s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" />
+                </svg>
+                <span>Color Palettes</span>
+              </button>
               <label className="btn btn-secondary file-btn" title="Import exported projects (.json)">
                 <input type="file" accept=".json,application/json" hidden onChange={handleImportProjectsJson} />
                 <span>Import Projects (.json)</span>
@@ -1593,14 +1862,36 @@ export default function StencilApp() {
 
                   <div className="palette-section">
                     <div className="palette-header">
-                      <span className="section-label">Arcade 16-Color Palette</span>
-                      <button
-                        type="button"
-                        className="btn-xs"
-                        onClick={() => setPalette(DEFAULT_MAKECODE_PALETTE.map(c => ({ ...c })))}
-                      >
-                        Reset Palette
-                      </button>
+                      <span className="section-label">Color Palette: {activePaletteObj?.name || 'Arcade'}</span>
+                      <div className="palette-header-controls">
+                        <select
+                          aria-label="Select Color Palette"
+                          className="palette-quick-select"
+                          value={activePaletteId}
+                          onChange={e => handleQuickSelectPalette(e.target.value)}
+                        >
+                          <optgroup label="Preset Palettes">
+                            {PRESET_PALETTES.map(p => (
+                              <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                          </optgroup>
+                          {customPalettes.length > 0 && (
+                            <optgroup label="My Custom Palettes">
+                              {customPalettes.map(p => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                              ))}
+                            </optgroup>
+                          )}
+                        </select>
+                        <button
+                          type="button"
+                          className="btn-xs btn-primary"
+                          onClick={openColorPaletteModal}
+                          title="Open Color Palette Editor to customize colors or create new reusable palettes"
+                        >
+                          Edit Palette
+                        </button>
+                      </div>
                     </div>
 
                     <div className="palette-bar" role="radiogroup" aria-label="Palette Colors">
@@ -1615,20 +1906,11 @@ export default function StencilApp() {
                             style={!entry.transparent ? { backgroundColor: entry.hex, color: textColor } : undefined}
                             title={`${entry.char.toUpperCase()} — ${entry.name} (${entry.transparent ? 'Transparent' : entry.hex})`}
                             onClick={() => setSelectedBrushColor(entry.index)}
+                            onDoubleClick={() => {
+                              if (!entry.transparent) openColorPaletteModal();
+                            }}
                           >
                             {entry.char.toUpperCase()}
-                            {!entry.transparent && (
-                              <input
-                                type="color"
-                                value={entry.hex}
-                                onChange={e => {
-                                  const nextHex = e.target.value;
-                                  setPalette(prev =>
-                                    prev.map(p => (p.index === entry.index ? { ...p, hex: nextHex } : p))
-                                  );
-                                }}
-                              />
-                            )}
                           </div>
                         );
                       })}
@@ -2205,6 +2487,33 @@ export default function StencilApp() {
                 </select>
               </div>
 
+              <div className="form-field">
+                <label htmlFor="newProjectPaletteSelect">Color Palette</label>
+                <select
+                  id="newProjectPaletteSelect"
+                  value={newProjPaletteId}
+                  onChange={e => setNewProjPaletteId(e.target.value)}
+                >
+                  <optgroup label="Preset Palettes">
+                    {PRESET_PALETTES.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </optgroup>
+                  {customPalettes.length > 0 && (
+                    <optgroup label="My Custom Palettes">
+                      {customPalettes.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+                <div style={{ marginTop: '6px' }}>
+                  <PaletteSwatchStrip
+                    hexes={(allPalettes.find(p => p.id === newProjPaletteId) || PRESET_PALETTES[0]).hexes}
+                  />
+                </div>
+              </div>
+
               <div className="modal-footer">
                 <button
                   type="button"
@@ -2218,6 +2527,266 @@ export default function StencilApp() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================================
+          COLOR PALETTE EDITOR MODAL
+          ==================================================================== */}
+      {showPaletteModal && (
+        <div
+          className="modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Color Palette"
+          onClick={e => {
+            if (e.target === e.currentTarget) {
+              setShowPaletteModal(false);
+              setShowPaletteDropdown(false);
+              setIsRenamingPalette(false);
+            }
+          }}
+        >
+          <div
+            className="modal-card palette-modal-card"
+            onClick={() => {
+              if (showPaletteDropdown) setShowPaletteDropdown(false);
+            }}
+          >
+            <div className="modal-header palette-modal-header">
+              <div className="palette-modal-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10c1.38 0 2.5-1.12 2.5-2.5 0-.61-.23-1.2-.64-1.67-.08-.1-.13-.21-.13-.33 0-.28.22-.5.5-.5H16c3.31 0 6-2.69 6-6 0-4.96-4.49-9-10-9zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 8 6.5 8 8 8.67 8 9.5 7.33 11 6.5 11zm3-4C8.67 7 8 6.33 8 5.5S8.67 4 9.5 4s1.5.67 1.5 1.5S10.33 7 9.5 7zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 4 14.5 4s1.5.67 1.5 1.5S15.33 7 14.5 7zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 8 17.5 8s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" />
+                </svg>
+                <h2>Color Palette</h2>
+              </div>
+              <button
+                type="button"
+                className="palette-modal-close-btn"
+                aria-label="Close"
+                onClick={() => {
+                  setShowPaletteModal(false);
+                  setShowPaletteDropdown(false);
+                  setIsRenamingPalette(false);
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="palette-modal-toolbar">
+              <div className="palette-dropdown-container" onClick={e => e.stopPropagation()}>
+                {isRenamingPalette ? (
+                  <div className="palette-rename-inline">
+                    <input
+                      type="text"
+                      className="palette-rename-input"
+                      value={renamePaletteText}
+                      onChange={e => setRenamePaletteText(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleCommitRenamePalette();
+                        } else if (e.key === 'Escape') {
+                          setIsRenamingPalette(false);
+                        }
+                      }}
+                      maxLength={40}
+                      placeholder="Palette name..."
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      className="btn-xs btn-primary"
+                      onClick={handleCommitRenamePalette}
+                    >
+                      Save Name
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="palette-dropdown-trigger"
+                    onClick={() => setShowPaletteDropdown(prev => !prev)}
+                    aria-expanded={showPaletteDropdown}
+                  >
+                    <span>{modalSelectedPaletteObj.name}</span>
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      {showPaletteDropdown ? (
+                        <polyline points="18 15 12 9 6 15" />
+                      ) : (
+                        <polyline points="6 9 12 15 18 9" />
+                      )}
+                    </svg>
+                  </button>
+                )}
+
+                {showPaletteDropdown && (
+                  <div className="palette-dropdown-menu" role="listbox">
+                    {allPalettes.map(pal => (
+                      <button
+                        key={pal.id}
+                        type="button"
+                        role="option"
+                        aria-selected={pal.id === modalPaletteId}
+                        className={`palette-dropdown-item${pal.id === modalPaletteId ? ' active' : ''}`}
+                        onClick={() => handleSelectModalPalette(pal)}
+                      >
+                        <span className="palette-dropdown-name">{pal.name}</span>
+                        <PaletteSwatchStrip hexes={pal.hexes} />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="palette-toolbar-actions">
+                <button
+                  type="button"
+                  className="palette-icon-btn"
+                  title="New Custom Palette (reusable in all projects)"
+                  onClick={handleCreateNewCustomPalette}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  className="palette-icon-btn"
+                  title={
+                    modalSelectedPaletteObj.isPreset
+                      ? 'Save as named custom palette'
+                      : 'Rename custom palette'
+                  }
+                  onClick={handleStartRenamePalette}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  className="palette-icon-btn"
+                  title={
+                    modalSelectedPaletteObj.isPreset
+                      ? 'Built-in preset palettes cannot be deleted'
+                      : 'Delete custom palette'
+                  }
+                  disabled={modalSelectedPaletteObj.isPreset}
+                  onClick={handleDeleteCustomPalette}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="palette-modal-rows">
+              {Array.from({ length: 15 }, (_, idx) => {
+                const colorIdx = idx + 1;
+                const rawHex = modalHexes[colorIdx] || '#000000';
+                const validPickerHex = /^#[0-9A-Fa-f]{6}$/.test(rawHex)
+                  ? rawHex
+                  : PRESET_PALETTES[0].hexes[colorIdx];
+
+                return (
+                  <div key={colorIdx} className="palette-modal-row">
+                    <span className="palette-row-index">{colorIdx}</span>
+
+                    <label className="palette-row-swatch-box" title={`Pick color ${colorIdx}`}>
+                      <span
+                        className="palette-row-swatch-fill"
+                        style={{ backgroundColor: validPickerHex }}
+                      />
+                      <input
+                        type="color"
+                        value={validPickerHex}
+                        onChange={e => handleModalColorChange(colorIdx, e.target.value.toUpperCase())}
+                      />
+                    </label>
+
+                    <input
+                      type="text"
+                      className="palette-row-hex-input"
+                      value={rawHex}
+                      maxLength={7}
+                      spellCheck={false}
+                      onChange={e => {
+                        let v = e.target.value;
+                        if (v && !v.startsWith('#')) v = `#${v}`;
+                        handleModalColorChange(colorIdx, v.toUpperCase());
+                      }}
+                    />
+
+                    <button
+                      type="button"
+                      className="palette-row-move-btn"
+                      title="Move color up"
+                      disabled={colorIdx === 1}
+                      onClick={() => handleSwapModalColors(colorIdx, colorIdx - 1)}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="12" y1="19" x2="12" y2="5" />
+                        <polyline points="5 12 12 5 19 12" />
+                      </svg>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="palette-row-move-btn"
+                      title="Move color down"
+                      disabled={colorIdx === 15}
+                      onClick={() => handleSwapModalColors(colorIdx, colorIdx + 1)}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19" />
+                        <polyline points="19 12 12 19 5 12" />
+                      </svg>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="palette-modal-footer">
+              <button
+                type="button"
+                className="palette-reset-btn"
+                onClick={handleResetModalPalette}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="1 4 1 10 7 10" />
+                  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                </svg>
+                <span>Reset</span>
+              </button>
+
+              <button
+                type="button"
+                className="palette-apply-btn"
+                onClick={handleApplyModalPalette}
+              >
+                Apply
+              </button>
+            </div>
           </div>
         </div>
       )}
