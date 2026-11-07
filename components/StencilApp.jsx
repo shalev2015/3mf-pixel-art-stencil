@@ -77,7 +77,7 @@ export default function StencilApp() {
 
   // Modals State
   const [showNewModal, setShowNewModal] = useState(false);
-  const [newProjName, setNewProjName] = useState('MakeCode Duck Stencil');
+  const [newProjName, setNewProjName] = useState('Duck');
   const [newProjTemplate, setNewProjTemplate] = useState('duck');
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [copyButtonText, setCopyButtonText] = useState('Copy JS');
@@ -132,12 +132,44 @@ export default function StencilApp() {
       }
     } catch (e) {}
 
+    const legacyNameMap = {
+      'MakeCode Duck Stencil': 'Duck',
+      'MakeCode Duck': 'Duck',
+      'Space Alien Cabinet Art': 'Alien',
+      'Space Alien Stencil': 'Alien',
+      'Space Alien': 'Alien',
+      'Arcade Burger Coaster': 'Burger',
+      'Arcade Burger Stencil': 'Burger',
+      'Arcade Burger': 'Burger',
+      'Arcade Ghost Stencil': 'Ghost',
+      'Arcade Ghost': 'Ghost',
+      'Hero Sword Stencil': 'Sword',
+      'Hero Sword': 'Sword',
+      'Orange Cat Stencil': 'Cat',
+      'Orange Cat': 'Cat',
+      '8-Bit Heart Stencil': 'Heart',
+      '8-Bit Heart': 'Heart'
+    };
+
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setProjects(parsed);
+          let didMigrate = false;
+          const migrated = parsed.map(p => {
+            if (p && legacyNameMap[p.name]) {
+              didMigrate = true;
+              return { ...p, name: legacyNameMap[p.name] };
+            }
+            return p;
+          });
+          setProjects(migrated);
+          if (didMigrate) {
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+            } catch (e) {}
+          }
           return;
         }
       }
@@ -149,7 +181,7 @@ export default function StencilApp() {
     const initial = [
       {
         id: generateId(),
-        name: 'MakeCode Duck Stencil',
+        name: 'Duck',
         updatedAt: now - 120000,
         code: PRESET_SPRITES.duck.code,
         paletteHexes: DEFAULT_MAKECODE_PALETTE.map(c => c.hex),
@@ -157,7 +189,7 @@ export default function StencilApp() {
       },
       {
         id: generateId(),
-        name: 'Space Alien Cabinet Art',
+        name: 'Alien',
         updatedAt: now - 60000,
         code: PRESET_SPRITES.invader.code,
         paletteHexes: DEFAULT_MAKECODE_PALETTE.map(c => c.hex),
@@ -165,7 +197,7 @@ export default function StencilApp() {
       },
       {
         id: generateId(),
-        name: 'Arcade Burger Coaster',
+        name: 'Burger',
         updatedAt: now - 10000,
         code: PRESET_SPRITES.burger.code,
         paletteHexes: DEFAULT_MAKECODE_PALETTE.map(c => c.hex),
@@ -1202,7 +1234,7 @@ export default function StencilApp() {
                     className="btn btn-primary"
                     onClick={() => {
                       setNewProjTemplate('duck');
-                      setNewProjName('MakeCode Duck Stencil');
+                      setNewProjName('Duck');
                       setShowNewModal(true);
                     }}
                   >
@@ -1217,7 +1249,7 @@ export default function StencilApp() {
                   className="new-project-card"
                   onClick={() => {
                     setNewProjTemplate('duck');
-                    setNewProjName('MakeCode Duck Stencil');
+                    setNewProjName('Duck');
                     setShowNewModal(true);
                   }}
                 >
@@ -1349,7 +1381,7 @@ export default function StencilApp() {
                       title={`Create a new project from ${tpl.title}`}
                       onClick={() => {
                         setNewProjTemplate(key);
-                        setNewProjName(`${tpl.title} Stencil`);
+                        setNewProjName(tpl.title);
                         setShowNewModal(true);
                       }}
                     >
@@ -1422,7 +1454,7 @@ export default function StencilApp() {
                 >
                   <option value="">-- Replace sprite with preset --</option>
                   {Object.entries(PRESET_SPRITES).map(([k, tpl]) => (
-                    <option key={k} value={k}>{tpl.title} ({tpl.subtitle.split(' · ')[0]})</option>
+                    <option key={k} value={k}>{tpl.title}</option>
                   ))}
                 </select>
               </div>
@@ -2157,16 +2189,16 @@ export default function StencilApp() {
                     const val = e.target.value;
                     setNewProjTemplate(val);
                     if (PRESET_SPRITES[val]) {
-                      setNewProjName(`${PRESET_SPRITES[val].title} Stencil`);
+                      setNewProjName(PRESET_SPRITES[val].title);
                     } else if (val === 'blank16') {
-                      setNewProjName('Custom 16x16 Stencil');
+                      setNewProjName('Blank 16x16');
                     } else if (val === 'blank32') {
-                      setNewProjName('Custom 32x32 Stencil');
+                      setNewProjName('Blank 32x32');
                     }
                   }}
                 >
                   {Object.entries(PRESET_SPRITES).map(([k, tpl]) => (
-                    <option key={k} value={k}>{tpl.title} ({tpl.subtitle.split(' · ')[0]})</option>
+                    <option key={k} value={k}>{tpl.title}</option>
                   ))}
                   <option value="blank16">Blank Canvas (16×16)</option>
                   <option value="blank32">Blank Canvas (32×32)</option>
