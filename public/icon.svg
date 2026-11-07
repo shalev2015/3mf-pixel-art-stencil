@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Outer dark arcade badge frame -->
+  <rect x="2" y="10" width="60" height="44" rx="10" fill="#090d11" stroke="#2f3742" stroke-width="3" />
+  <!-- Row 1: Red (#ff2121), Orange (#ff8135), Yellow (#fff609), Green (#78dc52) -->
+  <rect x="8"  y="17" width="10" height="13" rx="2" fill="#ff2121" />
+  <rect x="21" y="17" width="10" height="13" rx="2" fill="#ff8135" />
+  <rect x="33" y="17" width="10" height="13" rx="2" fill="#fff609" />
+  <rect x="46" y="17" width="10" height="13" rx="2" fill="#78dc52" />
+  <!-- Row 2: Light Blue (#87f2ff), Purple (#8e2ec4), Pink (#ff93c4), White (#ffffff) -->
+  <rect x="8"  y="34" width="10" height="13" rx="2" fill="#87f2ff" />
+  <rect x="21" y="34" width="10" height="13" rx="2" fill="#8e2ec4" />
+  <rect x="33" y="34" width="10" height="13" rx="2" fill="#ff93c4" />
+  <rect x="46" y="34" width="10" height="13" rx="2" fill="#ffffff" />
+</svg>
