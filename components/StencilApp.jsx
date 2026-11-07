@@ -1194,7 +1194,7 @@ export default function StencilApp() {
               <div>
                 <h1>Arcade <span>.3MF</span> Stenciler</h1>
                 <p className="subtitle">
-                  Turn MakeCode Arcade <code>img`...`</code> JS pixel art into 3D-printable multi-layer <code>.3mf</code> stencils
+                  Turn Arcade <code>img`...`</code> JS pixel art into 3D-printable multi-layer <code>.3mf</code> stencils
                 </p>
               </div>
             </div>
@@ -1255,7 +1255,7 @@ export default function StencilApp() {
                 >
                   <div className="new-project-plus">+</div>
                   <strong>New Stencil Project</strong>
-                  <span>Create a named project from MakeCode JS code, templates, or a blank grid</span>
+                  <span>Create a named project from JS code, templates, or a blank grid</span>
                 </button>
 
                 {filteredProjects.map(proj => {
@@ -1459,7 +1459,7 @@ export default function StencilApp() {
                 </select>
               </div>
 
-              <label className="btn btn-secondary file-btn" title="Import a PNG/JPG image and quantize to MakeCode Arcade palette">
+              <label className="btn btn-secondary file-btn" title="Import a PNG/JPG image and quantize to Arcade palette">
                 <input type="file" accept="image/*" hidden onChange={handleImportImage} />
                 <span>Import Image</span>
               </label>
@@ -1485,10 +1485,10 @@ export default function StencilApp() {
           </header>
 
           <main className="workspace-grid">
-            {/* LEFT PANEL: MakeCode JS Code & 2D Pixel Editor */}
-            <section className="panel panel-code" aria-label="MakeCode Sprite Input">
+            {/* LEFT PANEL: JS Code & 2D Pixel Editor */}
+            <section className="panel panel-code" aria-label="Sprite Input">
               <div className="panel-header">
-                <h2>1. MakeCode JS / Sprite Input</h2>
+                <h2>1. JS / Sprite Input</h2>
                 <div className="badge-row">
                   <span className="badge">{spriteW} × {spriteH} px</span>
                   <span className="badge badge-accent">
@@ -1521,7 +1521,7 @@ export default function StencilApp() {
 
                 <div className="code-editor-wrap">
                   <div className="code-toolbar">
-                    <span>Paste MakeCode <code>img`...`</code> code or marquee selection:</span>
+                    <span>Paste <code>img`...`</code> code or marquee selection:</span>
                     <div className="code-toolbar-actions">
                       <button
                         type="button"
@@ -1556,7 +1556,7 @@ export default function StencilApp() {
                     spellCheck={false}
                     value={codeText}
                     onChange={e => applyCodeText(e.target.value)}
-                    placeholder="Paste MakeCode Arcade img`...` JS code here..."
+                    placeholder="Paste Arcade img`...` JS code here..."
                   />
                 </div>
 
@@ -1593,7 +1593,7 @@ export default function StencilApp() {
 
                   <div className="palette-section">
                     <div className="palette-header">
-                      <span className="section-label">MakeCode Arcade 16-Color Palette</span>
+                      <span className="section-label">Arcade 16-Color Palette</span>
                       <button
                         type="button"
                         className="btn-xs"
@@ -1603,7 +1603,7 @@ export default function StencilApp() {
                       </button>
                     </div>
 
-                    <div className="palette-bar" role="radiogroup" aria-label="MakeCode Palette Colors">
+                    <div className="palette-bar" role="radiogroup" aria-label="Palette Colors">
                       {palette.map(entry => {
                         const rgb = hexToRgbNormalized(entry.hex);
                         const lum = 0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2];
@@ -2236,7 +2236,7 @@ export default function StencilApp() {
         >
           <div className="modal-card">
             <div className="modal-header">
-              <h2>How to Use MakeCode Arcade .3MF Stenciler</h2>
+              <h2>How to Use Arcade .3MF Stenciler</h2>
               <button
                 type="button"
                 className="btn-icon"
@@ -2253,8 +2253,8 @@ export default function StencilApp() {
                   From the <strong>Main Menu</strong>, create a named project or pick a starter template. All your projects auto-save in your browser and can be backed up or imported as <code>.json</code>.
                 </li>
                 <li>
-                  <strong>Copy your sprite from MakeCode Arcade:</strong>
-                  Open <a href="https://arcade.makecode.com" target="_blank" rel="noopener noreferrer">MakeCode Arcade</a>. In the Sprite Editor, select your sprite with the Marquee tool and press <kbd>Ctrl+C</kbd>, or switch to the <strong>JavaScript</strong> tab and copy any <code>img`...`</code> code block.
+                  <strong>Copy your sprite:</strong>
+                  In the Sprite Editor, select your sprite with the Marquee tool and press <kbd>Ctrl+C</kbd>, or switch to the <strong>JavaScript</strong> tab and copy any <code>img`...`</code> code block.
                 </li>
                 <li>
                   <strong>Paste &amp; Customize your 3D Stencil:</strong>
@@ -2267,7 +2267,7 @@ export default function StencilApp() {
                 </li>
                 <li>
                   <strong>Export to <code>.3MF</code> for 3D Printing:</strong>
-                  Download all color stencils together on a single <code>.3mf</code> build plate (named after your project and with embedded MakeCode Arcade filament colors) or download individual <code>.3mf</code> / <code>.stl</code> files for each color layer.
+                  Download all color stencils together on a single <code>.3mf</code> build plate (named after your project and with embedded Arcade filament colors) or download individual <code>.3mf</code> / <code>.stl</code> files for each color layer.
                 </li>
               </ol>
             </div>
