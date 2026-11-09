@@ -1,4 +1,4 @@
- # MakeCode Arcade `.3MF` Stenciler (Client-Side Next.js App)
+## `.3MF` Stenciler (Client-Side Next.js App)
 
 A 100% client-side **Next.js** web application (`output: 'export'`) that converts `img`...`` JavaScript/TypeScript pixel art sprites into **3D-printable `.3mf` stencils**
 
