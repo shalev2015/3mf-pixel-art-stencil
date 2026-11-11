@@ -294,15 +294,84 @@ export function attachViewerControls(
     redraw();
   };
 
+  let lastPinchDist = 0;
+
+  const onTouchStart = (e: TouchEvent) => {
+    if (e.touches.length === 1) {
+      v.isDragging = true;
+      v.dragButton = 0;
+      v.lastMouse = [e.touches[0].clientX, e.touches[0].clientY];
+    } else if (e.touches.length === 2) {
+      v.isDragging = true;
+      v.dragButton = 2;
+      const mx = (e.touches[0].clientX + e.touches[1].clientX) * 0.5;
+      const my = (e.touches[0].clientY + e.touches[1].clientY) * 0.5;
+      v.lastMouse = [mx, my];
+      lastPinchDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+    }
+  };
+
+  const onTouchMove = (e: TouchEvent) => {
+    if (!v.isDragging) return;
+    e.preventDefault();
+    if (e.touches.length === 1) {
+      const dx = e.touches[0].clientX - v.lastMouse[0];
+      const dy = e.touches[0].clientY - v.lastMouse[1];
+      v.lastMouse = [e.touches[0].clientX, e.touches[0].clientY];
+      v.yaw -= dx * 0.0075;
+      v.pitch = Math.max(-1.45, Math.min(1.52, v.pitch + dy * 0.0075));
+      redraw();
+    } else if (e.touches.length === 2) {
+      const mx = (e.touches[0].clientX + e.touches[1].clientX) * 0.5;
+      const my = (e.touches[0].clientY + e.touches[1].clientY) * 0.5;
+      const dx = mx - v.lastMouse[0];
+      const dy = my - v.lastMouse[1];
+      v.lastMouse = [mx, my];
+
+      const panScale = v.distance * 0.0016;
+      const cosYaw = Math.cos(v.yaw);
+      const sinYaw = Math.sin(v.yaw);
+      v.target[0] -= (dx * cosYaw - dy * sinYaw * 0.6) * panScale;
+      v.target[1] -= (dx * sinYaw + dy * cosYaw * 0.6) * panScale;
+
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      if (lastPinchDist > 5 && dist > 5) {
+        const scale = lastPinchDist / dist;
+        v.distance = Math.max(15, Math.min(1200, v.distance * scale));
+      }
+      lastPinchDist = dist;
+      redraw();
+    }
+  };
+
+  const onTouchEnd = () => {
+    v.isDragging = false;
+    lastPinchDist = 0;
+  };
+
   window.addEventListener('mousemove', onMouseMove);
   window.addEventListener('mouseup', onMouseUp);
   window.addEventListener('resize', redraw);
   canvas.addEventListener('wheel', onWheel, { passive: false });
+  canvas.addEventListener('touchstart', onTouchStart, { passive: true });
+  canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+  canvas.addEventListener('touchend', onTouchEnd);
+  canvas.addEventListener('touchcancel', onTouchEnd);
 
   return () => {
     window.removeEventListener('mousemove', onMouseMove);
     window.removeEventListener('mouseup', onMouseUp);
     window.removeEventListener('resize', redraw);
     canvas.removeEventListener('wheel', onWheel);
+    canvas.removeEventListener('touchstart', onTouchStart);
+    canvas.removeEventListener('touchmove', onTouchMove);
+    canvas.removeEventListener('touchend', onTouchEnd);
+    canvas.removeEventListener('touchcancel', onTouchEnd);
   };
 }

@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { MouseEvent as ReactMouseEvent } from 'react';
+import type { PointerEvent as ReactPointerEvent } from 'react';
 import type { Grid, PaletteEntry, Theme } from '@/lib/types';
 import { DEFAULT_PALETTE } from '@/lib/constants/palettes';
 import { setPixel } from '@/lib/sprite/transform';
 
 const CANVAS_SIZE = 320;
 const GRID_LINE_MAX_CELLS = 48;
-const IDLE_HINT = 'Click or drag on grid to paint pixels';
+const IDLE_HINT = 'Tap or drag on grid to paint pixels';
 
 function drawGrid(canvas: HTMLCanvasElement, grid: Grid, palette: PaletteEntry[], theme: Theme): void {
   const ctx = canvas.getContext('2d');
@@ -64,7 +64,7 @@ interface PixelEditorProps {
   onRotate: () => void;
 }
 
-/** Interactive 2D sprite canvas: left-drag paints, right-drag erases. */
+/** Interactive 2D sprite canvas: left-drag / touch paints, right-drag erases. */
 export default function PixelEditor({
   grid,
   palette,
@@ -84,7 +84,7 @@ export default function PixelEditor({
     if (canvasRef.current) drawGrid(canvasRef.current, grid, palette, theme);
   }, [grid, palette, theme]);
 
-  const handlePaint = (e: ReactMouseEvent<HTMLCanvasElement>) => {
+  const handlePaint = (e: ReactPointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const H = grid.length;
@@ -110,10 +110,18 @@ export default function PixelEditor({
       <div className="pixel-editor-header">
         <span className="section-label">Interactive 2D Sprite Preview &amp; Paint</span>
         <div className="transform-btns">
-          <button type="button" className="btn-xs" onClick={onTrim}>Trim Borders</button>
-          <button type="button" className="btn-xs" onClick={onFlipH}>Flip H</button>
-          <button type="button" className="btn-xs" onClick={onFlipV}>Flip V</button>
-          <button type="button" className="btn-xs" onClick={onRotate}>Rot 90°</button>
+          <button type="button" className="btn-xs" onClick={onTrim}>
+            Trim Borders
+          </button>
+          <button type="button" className="btn-xs" onClick={onFlipH}>
+            Flip H
+          </button>
+          <button type="button" className="btn-xs" onClick={onFlipV}>
+            Flip V
+          </button>
+          <button type="button" className="btn-xs" onClick={onRotate}>
+            Rot 90°
+          </button>
         </div>
       </div>
 
@@ -124,14 +132,18 @@ export default function PixelEditor({
           width={CANVAS_SIZE}
           height={CANVAS_SIZE}
           onContextMenu={e => e.preventDefault()}
-          onMouseDown={e => {
+          onPointerDown={e => {
+            e.currentTarget.setPointerCapture?.(e.pointerId);
             isPaintingRef.current = true;
             handlePaint(e);
           }}
-          onMouseUp={() => {
+          onPointerUp={() => {
             isPaintingRef.current = false;
           }}
-          onMouseMove={handlePaint}
+          onPointerCancel={() => {
+            isPaintingRef.current = false;
+          }}
+          onPointerMove={handlePaint}
         />
         <div className="pixel-hover-info">{hoverInfo}</div>
       </div>

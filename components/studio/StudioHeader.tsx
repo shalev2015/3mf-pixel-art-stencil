@@ -51,6 +51,7 @@ export default function StudioHeader({
           type="button"
           className="btn btn-secondary back-menu-btn"
           title="Return to Main Menu"
+          aria-label="Return to Main Menu"
           onClick={onBackToMenu}
         >
           <svg
@@ -62,11 +63,12 @@ export default function StudioHeader({
             strokeWidth="2.2"
             strokeLinecap="round"
             strokeLinejoin="round"
+            aria-hidden="true"
           >
             <line x1="19" y1="12" x2="5" y2="12" />
             <polyline points="12 19 5 12 12 5" />
           </svg>
-          <span>Main Menu</span>
+          <span className="btn-label">Main Menu</span>
         </button>
 
         <div className="project-title-bar">
@@ -83,15 +85,37 @@ export default function StudioHeader({
             onChange={e => onRenameProject(e.target.value)}
             title="Click to rename project"
           />
-          <span className="save-badge">✓ Saved</span>
+          <span className="save-badge" title="Saved automatically in browser">
+            ✓<span className="btn-label"> Saved</span>
+          </span>
         </div>
       </div>
 
       <div className="header-actions">
-        <div className="preset-group">
-          <label htmlFor="presetSelect">Load Sprite Preset:</label>
+        <div className="preset-group" title="Load Sprite Preset">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="preset-icon"
+            aria-hidden="true"
+          >
+            <rect x="3" y="3" width="7" height="7" rx="1" />
+            <rect x="14" y="3" width="7" height="7" rx="1" />
+            <rect x="14" y="14" width="7" height="7" rx="1" />
+            <rect x="3" y="14" width="7" height="7" rx="1" />
+          </svg>
+          <label htmlFor="presetSelect" className="btn-label">
+            Load Sprite Preset:
+          </label>
           <select
             id="presetSelect"
+            aria-label="Load Sprite Preset"
             value=""
             onChange={e => {
               const tpl = PRESET_SPRITES[e.target.value];
@@ -110,24 +134,76 @@ export default function StudioHeader({
         <label
           className="btn btn-secondary file-btn"
           title="Import a PNG/JPG image and quantize to palette"
+          aria-label="Import Image"
         >
           <input type="file" accept="image/*" hidden onChange={handleImageChange} />
-          <span>Import Image</span>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21 15 16 10 5 21" />
+          </svg>
+          <span className="btn-label">Import Image</span>
         </label>
 
         <button
           type="button"
           className="btn btn-secondary"
           title="Save a copy of this project"
+          aria-label="Duplicate project"
           onClick={onDuplicateProject}
         >
-          Duplicate
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+          </svg>
+          <span className="btn-label">Duplicate</span>
         </button>
 
         <ThemeToggleButton theme={theme} onToggle={onToggleTheme} />
 
-        <button type="button" className="btn btn-ghost" onClick={onOpenHelp}>
-          How to Use
+        <button
+          type="button"
+          className="btn btn-ghost"
+          title="How to Use"
+          aria-label="How to Use"
+          onClick={onOpenHelp}
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+          <span className="btn-label">How to Use</span>
         </button>
       </div>
     </header>
