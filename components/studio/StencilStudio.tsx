@@ -19,7 +19,6 @@ interface StencilStudioProps {
   onSelectPalette: (id: string) => void;
   onEditPalette: () => void;
   onToggleTheme: () => void;
-  onChangeTheme: (theme: Theme) => void;
   onOpenHelp: () => void;
 }
 
@@ -34,7 +33,6 @@ export default function StencilStudio({
   onSelectPalette,
   onEditPalette,
   onToggleTheme,
-  onChangeTheme,
   onOpenHelp
 }: StencilStudioProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('single');
@@ -100,8 +98,6 @@ export default function StencilStudio({
           settings={session.settings}
           onChangeSettings={session.setSettings}
           onResetSettings={session.resetSettings}
-          theme={theme}
-          onChangeTheme={onChangeTheme}
           layers={layers}
           activeLayerKey={activeLayerKey}
           projectName={session.projectName}

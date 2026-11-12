@@ -5,8 +5,7 @@ import type {
   CutoutMode,
   RegistrationHoleMode,
   StencilLayer,
-  StencilSettings,
-  Theme
+  StencilSettings
 } from '@/lib/types';
 import LayerList from '@/components/studio/LayerList';
 
@@ -14,8 +13,6 @@ interface SettingsPanelProps {
   settings: StencilSettings;
   onChangeSettings: Dispatch<SetStateAction<StencilSettings>>;
   onResetSettings: () => void;
-  theme: Theme;
-  onChangeTheme: (theme: Theme) => void;
   layers: StencilLayer[];
   activeLayerKey: string | null;
   projectName: string;
@@ -27,8 +24,6 @@ export default function SettingsPanel({
   settings,
   onChangeSettings,
   onResetSettings,
-  theme,
-  onChangeTheme,
   layers,
   activeLayerKey,
   projectName,
@@ -44,21 +39,6 @@ export default function SettingsPanel({
       </div>
 
       <div className="panel-body settings-scroll">
-        <div className="settings-group">
-          <h3>Appearance</h3>
-          <div className="control-row">
-            <label htmlFor="themeSelect">Color Theme</label>
-            <select
-              id="themeSelect"
-              value={theme}
-              onChange={e => onChangeTheme(e.target.value as Theme)}
-            >
-              <option value="dark">Dark Theme (Arcade Night)</option>
-              <option value="light">Light Theme (Daylight Studio)</option>
-            </select>
-          </div>
-        </div>
-
         <div className="settings-group">
           <h3>Physical Dimensions</h3>
           <div className="control-row">

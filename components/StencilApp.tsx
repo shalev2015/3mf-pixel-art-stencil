@@ -176,7 +176,6 @@ export default function StencilApp() {
           onSelectPalette={handleQuickSelectPalette}
           onEditPalette={paletteEditor.open}
           onToggleTheme={toggleTheme}
-          onChangeTheme={updateTheme}
           onOpenHelp={() => setShowHelpModal(true)}
         />
       )}
