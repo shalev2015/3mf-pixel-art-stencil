@@ -6,11 +6,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
 import ThemeToggleButton from '@/components/common/ThemeToggleButton';
 
-/** Full-screen login & sign-up view with Username/Password and Sign in with Google. */
+/** Full-screen login & sign-up view with Username/Password and Sign in with Email. */
 export default function LoginPage() {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
-  const { user, savedGoogleAccounts, loginWithPassword, loginWithGoogle, logout } = useAuth();
+  const { user, savedEmailAccounts, loginWithPassword, loginWithEmail, logout } = useAuth();
 
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [username, setUsername] = useState('');
@@ -18,9 +18,9 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [showGooglePrompt, setShowGooglePrompt] = useState(false);
-  const [googleEmail, setGoogleEmail] = useState('');
-  const [googleName, setGoogleName] = useState('');
+  const [showEmailPrompt, setShowEmailPrompt] = useState(false);
+  const [emailAddress, setEmailAddress] = useState('');
+  const [emailDisplayName, setEmailDisplayName] = useState('');
 
   const handlePasswordSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -33,20 +33,20 @@ export default function LoginPage() {
     router.push('/');
   };
 
-  const handleGoogleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleEmailSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
-    const res = loginWithGoogle(googleEmail, googleName);
+    const res = loginWithEmail(emailAddress, emailDisplayName);
     if (!res.ok) {
-      setError(res.error || 'Could not sign in with Google.');
+      setError(res.error || 'Could not sign in with Email.');
       return;
     }
     router.push('/');
   };
 
-  const handleQuickGoogleAccount = (email?: string, displayName?: string) => {
+  const handleQuickEmailAccount = (email?: string, displayName?: string) => {
     if (!email) return;
-    const res = loginWithGoogle(email, displayName);
+    const res = loginWithEmail(email, displayName);
     if (res.ok) {
       router.push('/');
     }
@@ -214,76 +214,68 @@ export default function LoginPage() {
             <span>OR</span>
           </div>
 
-          {!showGooglePrompt ? (
+          {!showEmailPrompt ? (
             <button
               type="button"
               className="google-signin-btn"
               onClick={() => {
                 setError(null);
-                setShowGooglePrompt(true);
+                setShowEmailPrompt(true);
               }}
             >
-              <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
-                <path
-                  fill="#EA4335"
-                  d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
-                />
-                <path
-                  fill="#4285F4"
-                  d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
-                />
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.1"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
               </svg>
-              <span>Sign in with Google</span>
+              <span>Sign in with Email</span>
             </button>
           ) : (
             <div className="google-chooser-box">
               <div className="google-chooser-header">
                 <div className="google-chooser-title">
-                  <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
-                    <path
-                      fill="#EA4335"
-                      d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
-                    />
-                    <path
-                      fill="#4285F4"
-                      d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
-                    />
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.1"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <rect x="2" y="4" width="20" height="16" rx="2" />
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
                   </svg>
-                  <strong>Choose a Google Account</strong>
+                  <strong>Sign in with Email</strong>
                 </div>
                 <button
                   type="button"
                   className="btn-xs"
-                  onClick={() => setShowGooglePrompt(false)}
+                  onClick={() => setShowEmailPrompt(false)}
                 >
                   Cancel
                 </button>
               </div>
 
-              {savedGoogleAccounts.length > 0 && (
+              {savedEmailAccounts.length > 0 && (
                 <div className="saved-google-list">
-                  {savedGoogleAccounts.map(acc => (
+                  {savedEmailAccounts.map(acc => (
                     <button
                       key={acc.id}
                       type="button"
                       className="saved-google-item"
-                      onClick={() => handleQuickGoogleAccount(acc.email, acc.displayName)}
+                      onClick={() => handleQuickEmailAccount(acc.email, acc.displayName)}
                     >
                       <span
                         className="user-avatar-dot"
@@ -300,24 +292,24 @@ export default function LoginPage() {
                 </div>
               )}
 
-              <form onSubmit={handleGoogleSubmit} className="google-prompt-form">
+              <form onSubmit={handleEmailSubmit} className="google-prompt-form">
                 <input
                   type="email"
-                  placeholder="your.name@gmail.com"
+                  placeholder="you@example.com"
                   required
-                  value={googleEmail}
-                  onChange={e => setGoogleEmail(e.target.value)}
+                  value={emailAddress}
+                  onChange={e => setEmailAddress(e.target.value)}
                   autoFocus
                 />
                 <input
                   type="text"
                   placeholder="Display Name (optional)"
                   maxLength={40}
-                  value={googleName}
-                  onChange={e => setGoogleName(e.target.value)}
+                  value={emailDisplayName}
+                  onChange={e => setEmailDisplayName(e.target.value)}
                 />
                 <button type="submit" className="btn btn-primary">
-                  Continue with Google
+                  Continue with Email
                 </button>
               </form>
             </div>

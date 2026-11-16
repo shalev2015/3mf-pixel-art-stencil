@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { AuthUser } from '@/lib/types';
 import {
-  authenticateWithGoogle,
+  authenticateWithEmail,
   authenticateWithPassword,
-  listSavedGoogleAccounts,
+  listSavedEmailAccounts,
   loadSessionUser,
   saveSessionUser,
   type AuthResult
@@ -14,11 +14,11 @@ import {
 /** Manages the current signed-in user session and login/logout actions. */
 export function useAuth() {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [savedGoogleAccounts, setSavedGoogleAccounts] = useState<AuthUser[]>([]);
+  const [savedEmailAccounts, setSavedEmailAccounts] = useState<AuthUser[]>([]);
 
   useEffect(() => {
     setUser(loadSessionUser());
-    setSavedGoogleAccounts(listSavedGoogleAccounts());
+    setSavedEmailAccounts(listSavedEmailAccounts());
   }, []);
 
   const loginWithPassword = useCallback(
@@ -32,11 +32,11 @@ export function useAuth() {
     []
   );
 
-  const loginWithGoogle = useCallback((email: string, displayName?: string): AuthResult => {
-    const res = authenticateWithGoogle(email, displayName);
+  const loginWithEmail = useCallback((email: string, displayName?: string): AuthResult => {
+    const res = authenticateWithEmail(email, displayName);
     if (res.ok && res.user) {
       setUser(res.user);
-      setSavedGoogleAccounts(listSavedGoogleAccounts());
+      setSavedEmailAccounts(listSavedEmailAccounts());
     }
     return res;
   }, []);
@@ -48,9 +48,9 @@ export function useAuth() {
 
   return {
     user,
-    savedGoogleAccounts,
+    savedEmailAccounts,
     loginWithPassword,
-    loginWithGoogle,
+    loginWithEmail,
     logout
   };
 }

@@ -143,16 +143,16 @@ export function authenticateWithPassword(
   return { ok: true, user: createdUser };
 }
 
-/** Signs in or registers a Google account locally. */
-export function authenticateWithGoogle(rawEmail: string, rawDisplayName?: string): AuthResult {
+/** Signs in or registers an email account locally. */
+export function authenticateWithEmail(rawEmail: string, rawDisplayName?: string): AuthResult {
   const email = rawEmail.trim().toLowerCase();
   if (!email || !email.includes('@')) {
-    return { ok: false, error: 'Please enter a valid Google email address.' };
+    return { ok: false, error: 'Please enter a valid email address.' };
   }
 
   const accounts = loadAccounts();
   const existing = accounts.find(
-    a => a.user.provider === 'google' && a.user.email?.toLowerCase() === email
+    a => a.user.provider === 'email' && a.user.email?.toLowerCase() === email
   );
 
   if (existing) {
@@ -160,25 +160,25 @@ export function authenticateWithGoogle(rawEmail: string, rawDisplayName?: string
     return { ok: true, user: existing.user };
   }
 
-  const localPart = email.split('@')[0] || 'Google User';
+  const localPart = email.split('@')[0] || 'User';
   const displayName = (rawDisplayName || '').trim() || localPart;
-  const googleUser: AuthUser = {
-    id: `ggl_${generateId()}`,
+  const emailUser: AuthUser = {
+    id: `eml_${generateId()}`,
     username: localPart,
     displayName,
     email,
-    provider: 'google',
+    provider: 'email',
     avatarColor: pickAvatarColor(email)
   };
 
-  saveAccounts([...accounts, { user: googleUser }]);
-  saveSessionUser(googleUser);
-  return { ok: true, user: googleUser };
+  saveAccounts([...accounts, { user: emailUser }]);
+  saveSessionUser(emailUser);
+  return { ok: true, user: emailUser };
 }
 
-/** Returns previously used Google accounts on this browser for one-click sign-in. */
-export function listSavedGoogleAccounts(): AuthUser[] {
+/** Returns previously used email accounts on this browser for one-click sign-in. */
+export function listSavedEmailAccounts(): AuthUser[] {
   return loadAccounts()
-    .filter(a => a.user.provider === 'google')
+    .filter(a => a.user.provider === 'email')
     .map(a => a.user);
 }

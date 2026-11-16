@@ -138,6 +138,6 @@ export interface AuthUser {
   username: string;
   displayName: string;
   email?: string;
-  provider: 'password' | 'google';
+  provider: 'password' | 'email';
   avatarColor: string;
 }
