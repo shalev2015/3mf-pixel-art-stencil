@@ -1,10 +1,12 @@
-import type { Grid, Project, Theme } from '@/lib/types';
+import type { AuthUser, Grid, Project, Theme } from '@/lib/types';
 import MenuHeader from '@/components/menu/MenuHeader';
 import ProjectsSection from '@/components/menu/ProjectsSection';
 import TemplatesSection from '@/components/menu/TemplatesSection';
 
 interface MainMenuProps {
   theme: Theme;
+  user: AuthUser | null;
+  onLogout: () => void;
   projects: Project[];
   onToggleTheme: () => void;
   onOpenPalettes: () => void;
@@ -22,6 +24,8 @@ interface MainMenuProps {
 /** Home screen: saved projects and starter templates. */
 export default function MainMenu({
   theme,
+  user,
+  onLogout,
   projects,
   onToggleTheme,
   onOpenPalettes,
@@ -39,6 +43,8 @@ export default function MainMenu({
     <div className="main-menu-view">
       <MenuHeader
         theme={theme}
+        user={user}
+        onLogout={onLogout}
         onToggleTheme={onToggleTheme}
         onOpenPalettes={onOpenPalettes}
         onImportProjects={onImportProjects}

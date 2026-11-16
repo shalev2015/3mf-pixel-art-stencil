@@ -1,10 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import type { ColorPalette, Project, Screen } from '@/lib/types';
 import { PRESET_PALETTES } from '@/lib/constants/palettes';
 import { downloadProject3mf, downloadProjectsJson } from '@/lib/export/downloads';
 import { createProject } from '@/lib/projects/factory';
+import { useAuth } from '@/hooks/useAuth';
 import { useColorPalettes } from '@/hooks/useColorPalettes';
 import { usePaletteEditor } from '@/hooks/usePaletteEditor';
 import { useProjects } from '@/hooks/useProjects';
@@ -16,19 +18,33 @@ import HelpModal from '@/components/modals/HelpModal';
 import NewProjectModal from '@/components/modals/NewProjectModal';
 import StencilStudio from '@/components/studio/StencilStudio';
 
+const MENU_PATH = '/';
+const editorPath = (id: string) => `/editor/?id=${encodeURIComponent(id)}`;
+
+interface StencilAppProps {
+  /** Which screen this route renders: `/` is the menu, `/editor` is the studio. */
+  screen: Screen;
+}
+
 /** Root orchestrator connecting screens, project storage, color palettes, and modals. */
-export default function StencilApp() {
-  const { theme, updateTheme, toggleTheme } = useTheme();
+export default function StencilApp({ screen }: StencilAppProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const routeProjectId = searchParams.get('id');
+
+  const { theme, toggleTheme } = useTheme();
+  const { user, logout } = useAuth();
   const { customPalettes, allPalettes, updateCustomPalettes, findPalette } = useColorPalettes();
   const {
     projects,
+    isLoaded,
     addProject,
     duplicateProject,
     deleteProject,
     renameProject,
     patchProject,
     importProjects
-  } = useProjects();
+  } = useProjects(user?.id);
 
   const session = useStudioSession(allPalettes);
   const {
@@ -42,7 +58,6 @@ export default function StencilApp() {
     applyPalette
   } = session;
 
-  const [screen, setScreen] = useState<Screen>('menu');
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [newModalState, setNewModalState] = useState<{
     isOpen: boolean;
@@ -56,9 +71,25 @@ export default function StencilApp() {
 
   const activePalette = findPalette(paletteId);
 
+  // Load the project named in the URL into the studio; unknown ids go back to the menu
+  useEffect(() => {
+    if (screen !== 'editor' || !isLoaded) return;
+    if (!routeProjectId) {
+      router.replace(MENU_PATH);
+      return;
+    }
+    if (routeProjectId === projectId) return;
+    const target = projects.find(p => p.id === routeProjectId);
+    if (target) {
+      loadSessionProject(target);
+    } else {
+      router.replace(MENU_PATH);
+    }
+  }, [screen, isLoaded, routeProjectId, projectId, projects, loadSessionProject, router]);
+
   // Auto-save active project edits back into project storage
   useEffect(() => {
-    if (screen !== 'editor' || !projectId) return;
+    if (screen !== 'editor' || !projectId || projectId !== routeProjectId) return;
     patchProject(projectId, {
       name: projectName || 'Untitled Project',
       code: sprite.codeText,
@@ -66,7 +97,17 @@ export default function StencilApp() {
       paletteHexes: palette.map(c => c.hex),
       settings
     });
-  }, [screen, projectId, projectName, sprite.codeText, paletteId, palette, settings, patchProject]);
+  }, [
+    screen,
+    projectId,
+    routeProjectId,
+    projectName,
+    sprite.codeText,
+    paletteId,
+    palette,
+    settings,
+    patchProject
+  ]);
 
   const getInitialModalHexes = useCallback(() => {
     if (screen === 'editor') {
@@ -86,10 +127,9 @@ export default function StencilApp() {
 
   const handleOpenProject = useCallback(
     (project: Project) => {
-      loadSessionProject(project);
-      setScreen('editor');
+      router.push(editorPath(project.id));
     },
-    [loadSessionProject]
+    [router]
   );
 
   const handlePromptNewProject = useCallback((templateKey: string, name: string) => {
@@ -150,6 +190,8 @@ export default function StencilApp() {
       {screen === 'menu' && (
         <MainMenu
           theme={theme}
+          user={user}
+          onLogout={logout}
           projects={projects}
           onToggleTheme={toggleTheme}
           onOpenPalettes={paletteEditor.open}
@@ -165,13 +207,15 @@ export default function StencilApp() {
         />
       )}
 
-      {screen === 'editor' && (
+      {screen === 'editor' && projectId !== null && projectId === routeProjectId && (
         <StencilStudio
           session={session}
           paletteName={activePalette.name}
           customPalettes={customPalettes}
           theme={theme}
-          onBackToMenu={() => setScreen('menu')}
+          user={user}
+          onLogout={logout}
+          onBackToMenu={() => router.push(MENU_PATH)}
           onDuplicateProject={handleDuplicateInStudio}
           onSelectPalette={handleQuickSelectPalette}
           onEditPalette={paletteEditor.open}

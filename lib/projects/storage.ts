@@ -39,9 +39,13 @@ function writeJson(key: string, value: unknown): void {
   }
 }
 
+function projectsKeyForUser(userId?: string | null): string {
+  return userId ? `${STORAGE_KEY}_user_${userId}` : STORAGE_KEY;
+}
+
 /** Loads saved projects, renaming legacy defaults. Returns null when nothing is stored. */
-export function loadProjects(): Project[] | null {
-  const parsed = readJson(STORAGE_KEY);
+export function loadProjects(userId?: string | null): Project[] | null {
+  const parsed = readJson(projectsKeyForUser(userId));
   if (!Array.isArray(parsed) || parsed.length === 0) return null;
 
   let didMigrate = false;
@@ -52,12 +56,12 @@ export function loadProjects(): Project[] | null {
     }
     return p;
   });
-  if (didMigrate) saveProjects(migrated);
+  if (didMigrate) saveProjects(migrated, userId);
   return migrated;
 }
 
-export function saveProjects(projects: Project[]): void {
-  writeJson(STORAGE_KEY, projects);
+export function saveProjects(projects: Project[], userId?: string | null): void {
+  writeJson(projectsKeyForUser(userId), projects);
 }
 
 export function loadCustomPalettes(): ColorPalette[] {

@@ -5,25 +5,32 @@ import type { Project } from '@/lib/types';
 import { copyProject, createSeedProjects, parseImportedProjects } from '@/lib/projects/factory';
 import { loadProjects, saveProjects } from '@/lib/projects/storage';
 
-/** Saved projects list with localStorage persistence and CRUD helpers. */
-export function useProjects() {
+/** Saved projects list with per-user (or guest) localStorage persistence and CRUD helpers. */
+export function useProjects(userId?: string | null) {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    const loaded = loadProjects();
+    setIsLoaded(false);
+    const loaded = loadProjects(userId);
     if (loaded) {
       setProjects(loaded);
+      setIsLoaded(true);
       return;
     }
     const seed = createSeedProjects();
     setProjects(seed);
-    saveProjects(seed);
-  }, []);
+    saveProjects(seed, userId);
+    setIsLoaded(true);
+  }, [userId]);
 
-  const saveList = useCallback((next: Project[]) => {
-    setProjects(next);
-    saveProjects(next);
-  }, []);
+  const saveList = useCallback(
+    (next: Project[]) => {
+      setProjects(next);
+      saveProjects(next, userId);
+    },
+    [userId]
+  );
 
   const addProject = useCallback(
     (project: Project) => saveList([project, ...projects]),
@@ -53,16 +60,19 @@ export function useProjects() {
   );
 
   /** Merges `patch` into a project and persists it (used by the Studio auto-save). */
-  const patchProject = useCallback((id: string, patch: Partial<Project>) => {
-    setProjects(prev => {
-      const idx = prev.findIndex(p => p.id === id);
-      if (idx === -1) return prev;
-      const next = [...prev];
-      next[idx] = { ...prev[idx], ...patch, updatedAt: Date.now() };
-      saveProjects(next);
-      return next;
-    });
-  }, []);
+  const patchProject = useCallback(
+    (id: string, patch: Partial<Project>) => {
+      setProjects(prev => {
+        const idx = prev.findIndex(p => p.id === id);
+        if (idx === -1) return prev;
+        const next = [...prev];
+        next[idx] = { ...prev[idx], ...patch, updatedAt: Date.now() };
+        saveProjects(next, userId);
+        return next;
+      });
+    },
+    [userId]
+  );
 
   /** Reads an exported `.json` file and prepends its projects. */
   const importProjects = useCallback(
@@ -83,6 +93,7 @@ export function useProjects() {
 
   return {
     projects,
+    isLoaded,
     addProject,
     duplicateProject,
     deleteProject,

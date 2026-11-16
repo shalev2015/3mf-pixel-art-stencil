@@ -1,15 +1,18 @@
 'use client';
 
 import type { ChangeEvent } from 'react';
-import type { PaletteEntry, Theme } from '@/lib/types';
+import type { AuthUser, PaletteEntry, Theme } from '@/lib/types';
 import { PRESET_SPRITES } from '@/lib/constants/sprites';
 import { importImageFile } from '@/lib/sprite/imageImport';
 import ThemeToggleButton from '@/components/common/ThemeToggleButton';
+import UserAuthButton from '@/components/common/UserAuthButton';
 
 interface StudioHeaderProps {
   projectName: string;
   palette: PaletteEntry[];
   theme: Theme;
+  user: AuthUser | null;
+  onLogout: () => void;
   onBackToMenu: () => void;
   onRenameProject: (name: string) => void;
   onLoadPresetCode: (code: string) => void;
@@ -24,6 +27,8 @@ export default function StudioHeader({
   projectName,
   palette,
   theme,
+  user,
+  onLogout,
   onBackToMenu,
   onRenameProject,
   onLoadPresetCode,
@@ -205,6 +210,8 @@ export default function StudioHeader({
           </svg>
           <span className="btn-label">How to Use</span>
         </button>
+
+        <UserAuthButton user={user} onLogout={onLogout} />
       </div>
     </header>
   );

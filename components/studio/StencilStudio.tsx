@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { ColorPalette, Theme, ViewMode } from '@/lib/types';
+import type { AuthUser, ColorPalette, Theme, ViewMode } from '@/lib/types';
 import type { StudioSession } from '@/hooks/useStudioSession';
 import { useStencilBuild } from '@/hooks/useStencilBuild';
 import SettingsPanel from '@/components/studio/SettingsPanel';
@@ -14,6 +14,8 @@ interface StencilStudioProps {
   paletteName: string;
   customPalettes: ColorPalette[];
   theme: Theme;
+  user: AuthUser | null;
+  onLogout: () => void;
   onBackToMenu: () => void;
   onDuplicateProject: () => void;
   onSelectPalette: (id: string) => void;
@@ -28,6 +30,8 @@ export default function StencilStudio({
   paletteName,
   customPalettes,
   theme,
+  user,
+  onLogout,
   onBackToMenu,
   onDuplicateProject,
   onSelectPalette,
@@ -59,6 +63,8 @@ export default function StencilStudio({
         projectName={session.projectName}
         palette={session.palette}
         theme={theme}
+        user={user}
+        onLogout={onLogout}
         onBackToMenu={onBackToMenu}
         onRenameProject={session.setProjectName}
         onLoadPresetCode={session.sprite.applyCodeText}

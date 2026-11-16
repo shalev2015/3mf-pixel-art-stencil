@@ -1,9 +1,12 @@
-import type { Theme } from '@/lib/types';
+import type { AuthUser, Theme } from '@/lib/types';
 import PaletteIcon from '@/components/common/PaletteIcon';
 import ThemeToggleButton from '@/components/common/ThemeToggleButton';
+import UserAuthButton from '@/components/common/UserAuthButton';
 
 interface MenuHeaderProps {
   theme: Theme;
+  user: AuthUser | null;
+  onLogout: () => void;
   onToggleTheme: () => void;
   onOpenPalettes: () => void;
   onImportProjects: (file: File) => void;
@@ -13,6 +16,8 @@ interface MenuHeaderProps {
 
 export default function MenuHeader({
   theme,
+  user,
+  onLogout,
   onToggleTheme,
   onOpenPalettes,
   onImportProjects,
@@ -135,6 +140,7 @@ export default function MenuHeader({
           </svg>
           <span className="btn-label">How to Use</span>
         </button>
+        <UserAuthButton user={user} onLogout={onLogout} />
       </div>
     </header>
   );

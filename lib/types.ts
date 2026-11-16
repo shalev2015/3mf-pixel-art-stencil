@@ -132,3 +132,12 @@ export interface Project {
 export type Theme = 'dark' | 'light';
 export type Screen = 'menu' | 'editor';
 export type ViewMode = 'single' | 'bed' | 'stack' | 'plaque';
+
+export interface AuthUser {
+  id: string;
+  username: string;
+  displayName: string;
+  email?: string;
+  provider: 'password' | 'google';
+  avatarColor: string;
+}
