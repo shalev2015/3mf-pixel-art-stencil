@@ -6,23 +6,26 @@ import { copyProject, createSeedProjects, parseImportedProjects } from '@/lib/pr
 import { loadProjects, saveProjects } from '@/lib/projects/storage';
 
 /** Saved projects list with per-user (or guest) localStorage persistence and CRUD helpers. */
-export function useProjects(userId?: string | null) {
+export function useProjects(userId?: string | null, isAuthLoaded = true) {
+  const scopeKey = userId ?? '__guest__';
   const [projects, setProjects] = useState<Project[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [loadedScope, setLoadedScope] = useState<string | null>(null);
 
   useEffect(() => {
-    setIsLoaded(false);
+    if (!isAuthLoaded) return;
     const loaded = loadProjects(userId);
     if (loaded) {
       setProjects(loaded);
-      setIsLoaded(true);
+      setLoadedScope(scopeKey);
       return;
     }
     const seed = createSeedProjects();
     setProjects(seed);
     saveProjects(seed, userId);
-    setIsLoaded(true);
-  }, [userId]);
+    setLoadedScope(scopeKey);
+  }, [userId, scopeKey, isAuthLoaded]);
+
+  const isLoaded = isAuthLoaded && loadedScope === scopeKey;
 
   const saveList = useCallback(
     (next: Project[]) => {

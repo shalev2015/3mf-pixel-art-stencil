@@ -14,11 +14,13 @@ import {
 /** Manages the current signed-in user session and login/logout actions. */
 export function useAuth() {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [isAuthLoaded, setIsAuthLoaded] = useState(false);
   const [savedEmailAccounts, setSavedEmailAccounts] = useState<AuthUser[]>([]);
 
   useEffect(() => {
     setUser(loadSessionUser());
     setSavedEmailAccounts(listSavedEmailAccounts());
+    setIsAuthLoaded(true);
   }, []);
 
   const loginWithPassword = useCallback(
@@ -48,6 +50,7 @@ export function useAuth() {
 
   return {
     user,
+    isAuthLoaded,
     savedEmailAccounts,
     loginWithPassword,
     loginWithEmail,

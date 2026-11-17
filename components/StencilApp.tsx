@@ -6,6 +6,7 @@ import type { ColorPalette, Project, Screen } from '@/lib/types';
 import { PRESET_PALETTES } from '@/lib/constants/palettes';
 import { downloadProject3mf, downloadProjectsJson } from '@/lib/export/downloads';
 import { createProject } from '@/lib/projects/factory';
+import { loadProjects } from '@/lib/projects/storage';
 import { useAuth } from '@/hooks/useAuth';
 import { useColorPalettes } from '@/hooks/useColorPalettes';
 import { usePaletteEditor } from '@/hooks/usePaletteEditor';
@@ -30,10 +31,15 @@ interface StencilAppProps {
 export default function StencilApp({ screen }: StencilAppProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const routeProjectId = searchParams.get('id');
+  const queryId = searchParams.get('id');
+  const routeProjectId =
+    queryId ||
+    (typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('id')
+      : null);
 
   const { theme, toggleTheme } = useTheme();
-  const { user, logout } = useAuth();
+  const { user, isAuthLoaded, logout } = useAuth();
   const { customPalettes, allPalettes, updateCustomPalettes, findPalette } = useColorPalettes();
   const {
     projects,
@@ -44,7 +50,7 @@ export default function StencilApp({ screen }: StencilAppProps) {
     renameProject,
     patchProject,
     importProjects
-  } = useProjects(user?.id);
+  } = useProjects(user?.id, isAuthLoaded);
 
   const session = useStudioSession(allPalettes);
   const {
@@ -79,13 +85,15 @@ export default function StencilApp({ screen }: StencilAppProps) {
       return;
     }
     if (routeProjectId === projectId) return;
-    const target = projects.find(p => p.id === routeProjectId);
+    const target =
+      projects.find(p => p.id === routeProjectId) ||
+      loadProjects(user?.id)?.find(p => p.id === routeProjectId);
     if (target) {
       loadSessionProject(target);
     } else {
       router.replace(MENU_PATH);
     }
-  }, [screen, isLoaded, routeProjectId, projectId, projects, loadSessionProject, router]);
+  }, [screen, isLoaded, routeProjectId, projectId, projects, user?.id, loadSessionProject, router]);
 
   // Auto-save active project edits back into project storage
   useEffect(() => {

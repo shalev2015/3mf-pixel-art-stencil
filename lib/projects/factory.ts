@@ -2,9 +2,25 @@ import type { ColorPalette, Project } from '@/lib/types';
 import { DEFAULT_PALETTE, PRESET_PALETTES } from '@/lib/constants/palettes';
 import { PRESET_SPRITES } from '@/lib/constants/sprites';
 import { getDefaultSettings } from '@/lib/constants/settings';
+import { createBlankGrid } from '@/lib/sprite/grid';
+import { gridToSpriteString } from '@/lib/sprite/serialize';
 import { generateId } from '@/lib/utils/id';
 
 const DEFAULT_HEXES = DEFAULT_PALETTE.map(c => c.hex);
+
+export function resolveTemplateCode(templateKeyOrCode: string): string {
+  const key = templateKeyOrCode.trim();
+  if (key === 'blank16') {
+    return gridToSpriteString(createBlankGrid(16, 16));
+  }
+  if (key === 'blank32') {
+    return gridToSpriteString(createBlankGrid(32, 32));
+  }
+  if (PRESET_SPRITES[key]) {
+    return PRESET_SPRITES[key].code;
+  }
+  return templateKeyOrCode || PRESET_SPRITES.duck.code;
+}
 
 /** The three starter projects shown on first launch. */
 export function createSeedProjects(): Project[] {
@@ -37,13 +53,17 @@ export function createSeedProjects(): Project[] {
   ];
 }
 
-export function createProject(name: string, code: string, palette: ColorPalette = PRESET_PALETTES[0]): Project {
+export function createProject(
+  name: string,
+  templateKeyOrCode: string,
+  palette: ColorPalette = PRESET_PALETTES[0]
+): Project {
   const trimmed = name.trim();
   return {
     id: generateId(),
     name: trimmed || 'Untitled Stencil Project',
     updatedAt: Date.now(),
-    code,
+    code: resolveTemplateCode(templateKeyOrCode),
     paletteId: palette.id,
     paletteHexes: [...palette.hexes],
     settings: getDefaultSettings()

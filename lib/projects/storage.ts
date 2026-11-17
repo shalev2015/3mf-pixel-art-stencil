@@ -1,5 +1,11 @@
 import type { ColorPalette, Project, Theme } from '@/lib/types';
 import { CUSTOM_PALETTES_STORAGE_KEY, STORAGE_KEY, THEME_STORAGE_KEY } from '@/lib/constants/storage';
+import { PRESET_SPRITES } from '@/lib/constants/sprites';
+import { resolveTemplateCode } from '@/lib/projects/factory';
+
+const TITLE_TO_TEMPLATE_KEY: Record<string, string> = Object.fromEntries(
+  Object.entries(PRESET_SPRITES).map(([k, v]) => [v.title.toLowerCase(), k])
+);
 
 /** Old default project names, mapped to the short names used today. */
 const LEGACY_NAME_MAP: Record<string, string> = {
@@ -50,11 +56,25 @@ export function loadProjects(userId?: string | null): Project[] | null {
 
   let didMigrate = false;
   const migrated = (parsed as Project[]).map(p => {
-    if (p && LEGACY_NAME_MAP[p.name]) {
+    if (!p) return p;
+    let next = p;
+    if (LEGACY_NAME_MAP[next.name]) {
       didMigrate = true;
-      return { ...p, name: LEGACY_NAME_MAP[p.name] };
+      next = { ...next, name: LEGACY_NAME_MAP[next.name] };
     }
-    return p;
+    let resolvedCode = resolveTemplateCode(next.code || '');
+    // Heal projects saved with a 1x2/1x3 fragment from an unexpanded template key
+    const compact = resolvedCode.replace(/img\s*`|`|\s+/g, '');
+    if (compact.length > 0 && compact.length <= 3) {
+      const matchedKey =
+        TITLE_TO_TEMPLATE_KEY[next.name.trim().toLowerCase()] || 'duck';
+      resolvedCode = PRESET_SPRITES[matchedKey].code;
+    }
+    if (resolvedCode !== next.code) {
+      didMigrate = true;
+      next = { ...next, code: resolvedCode };
+    }
+    return next;
   });
   if (didMigrate) saveProjects(migrated, userId);
   return migrated;
