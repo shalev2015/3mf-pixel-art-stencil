@@ -137,7 +137,6 @@ export interface AuthUser {
   id: string;
   username: string;
   displayName: string;
-  email?: string;
-  provider: 'password' | 'email';
+  provider: 'password';
   avatarColor: string;
 }

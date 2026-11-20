@@ -6,21 +6,17 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
 import ThemeToggleButton from '@/components/common/ThemeToggleButton';
 
-/** Full-screen login & sign-up view with Username/Password and Sign in with Email. */
+/** Full-screen login & sign-up view with Username and Password. */
 export default function LoginPage() {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
-  const { user, savedEmailAccounts, loginWithPassword, loginWithEmail, logout } = useAuth();
+  const { user, loginWithPassword, logout } = useAuth();
 
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const [showEmailPrompt, setShowEmailPrompt] = useState(false);
-  const [emailAddress, setEmailAddress] = useState('');
-  const [emailDisplayName, setEmailDisplayName] = useState('');
 
   const handlePasswordSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -31,25 +27,6 @@ export default function LoginPage() {
       return;
     }
     router.push('/');
-  };
-
-  const handleEmailSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError(null);
-    const res = loginWithEmail(emailAddress, emailDisplayName);
-    if (!res.ok) {
-      setError(res.error || 'Could not sign in with Email.');
-      return;
-    }
-    router.push('/');
-  };
-
-  const handleQuickEmailAccount = (email?: string, displayName?: string) => {
-    if (!email) return;
-    const res = loginWithEmail(email, displayName);
-    if (res.ok) {
-      router.push('/');
-    }
   };
 
   return (
@@ -115,7 +92,6 @@ export default function LoginPage() {
                 </span>
                 <div>
                   <strong>Signed in as {user.displayName}</strong>
-                  {user.email && <small>{user.email}</small>}
                 </div>
               </div>
               <div className="login-session-actions">
@@ -209,111 +185,6 @@ export default function LoginPage() {
               {mode === 'signin' ? 'Sign In' : 'Create Account & Sign In'}
             </button>
           </form>
-
-          <div className="login-or-divider">
-            <span>OR</span>
-          </div>
-
-          {!showEmailPrompt ? (
-            <button
-              type="button"
-              className="google-signin-btn"
-              onClick={() => {
-                setError(null);
-                setShowEmailPrompt(true);
-              }}
-            >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.1"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <rect x="2" y="4" width="20" height="16" rx="2" />
-                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-              </svg>
-              <span>Sign in with Email</span>
-            </button>
-          ) : (
-            <div className="google-chooser-box">
-              <div className="google-chooser-header">
-                <div className="google-chooser-title">
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.1"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <rect x="2" y="4" width="20" height="16" rx="2" />
-                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                  </svg>
-                  <strong>Sign in with Email</strong>
-                </div>
-                <button
-                  type="button"
-                  className="btn-xs"
-                  onClick={() => setShowEmailPrompt(false)}
-                >
-                  Cancel
-                </button>
-              </div>
-
-              {savedEmailAccounts.length > 0 && (
-                <div className="saved-google-list">
-                  {savedEmailAccounts.map(acc => (
-                    <button
-                      key={acc.id}
-                      type="button"
-                      className="saved-google-item"
-                      onClick={() => handleQuickEmailAccount(acc.email, acc.displayName)}
-                    >
-                      <span
-                        className="user-avatar-dot"
-                        style={{ backgroundColor: acc.avatarColor }}
-                      >
-                        {acc.displayName.slice(0, 1).toUpperCase()}
-                      </span>
-                      <div className="saved-google-meta">
-                        <strong>{acc.displayName}</strong>
-                        <span>{acc.email}</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              <form onSubmit={handleEmailSubmit} className="google-prompt-form">
-                <input
-                  type="email"
-                  placeholder="you@example.com"
-                  required
-                  value={emailAddress}
-                  onChange={e => setEmailAddress(e.target.value)}
-                  autoFocus
-                />
-                <input
-                  type="text"
-                  placeholder="Display Name (optional)"
-                  maxLength={40}
-                  value={emailDisplayName}
-                  onChange={e => setEmailDisplayName(e.target.value)}
-                />
-                <button type="submit" className="btn btn-primary">
-                  Continue with Email
-                </button>
-              </form>
-            </div>
-          )}
 
           <div className="login-guest-footer">
             <button type="button" className="btn-link" onClick={() => router.push('/')}>

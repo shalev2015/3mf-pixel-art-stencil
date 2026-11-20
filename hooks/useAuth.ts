@@ -3,9 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { AuthUser } from '@/lib/types';
 import {
-  authenticateWithEmail,
   authenticateWithPassword,
-  listSavedEmailAccounts,
   loadSessionUser,
   saveSessionUser,
   type AuthResult
@@ -15,11 +13,9 @@ import {
 export function useAuth() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isAuthLoaded, setIsAuthLoaded] = useState(false);
-  const [savedEmailAccounts, setSavedEmailAccounts] = useState<AuthUser[]>([]);
 
   useEffect(() => {
     setUser(loadSessionUser());
-    setSavedEmailAccounts(listSavedEmailAccounts());
     setIsAuthLoaded(true);
   }, []);
 
@@ -34,15 +30,6 @@ export function useAuth() {
     []
   );
 
-  const loginWithEmail = useCallback((email: string, displayName?: string): AuthResult => {
-    const res = authenticateWithEmail(email, displayName);
-    if (res.ok && res.user) {
-      setUser(res.user);
-      setSavedEmailAccounts(listSavedEmailAccounts());
-    }
-    return res;
-  }, []);
-
   const logout = useCallback(() => {
     saveSessionUser(null);
     setUser(null);
@@ -51,9 +38,7 @@ export function useAuth() {
   return {
     user,
     isAuthLoaded,
-    savedEmailAccounts,
     loginWithPassword,
-    loginWithEmail,
     logout
   };
 }

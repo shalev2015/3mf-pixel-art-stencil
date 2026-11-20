@@ -46,7 +46,7 @@ export default function UserAuthButton({ user, onLogout }: UserAuthButtonProps) 
         type="button"
         className="user-chip-profile"
         onClick={() => router.push('/login/')}
-        title={`Signed in as ${user.displayName}${user.email ? ` (${user.email})` : ''} — Click to switch account`}
+        title={`Signed in as ${user.displayName} — Click to switch account`}
       >
         <span className="user-avatar-dot" style={{ backgroundColor: user.avatarColor }}>
           {user.displayName.slice(0, 1).toUpperCase()}
