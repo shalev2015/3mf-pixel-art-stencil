@@ -86,11 +86,7 @@ export interface AuthResult {
 }
 
 /** Signs in with username & password; if the username does not exist yet, creates the account. */
-export function authenticateWithPassword(
-  rawUsername: string,
-  rawPassword: string,
-  mode: 'signin' | 'signup'
-): AuthResult {
+export function authenticateWithPassword(rawUsername: string, rawPassword: string): AuthResult {
   const cleanUsername = rawUsername.trim();
   if (!cleanUsername) {
     return { ok: false, error: 'Please enter a username.' };
@@ -106,23 +102,6 @@ export function authenticateWithPassword(
   );
   const digest = hashPassword(rawPassword);
 
-  if (mode === 'signup') {
-    if (existing) {
-      return { ok: false, error: `Username "${cleanUsername}" is already taken.` };
-    }
-    const newUser: AuthUser = {
-      id: `usr_${generateId()}`,
-      username: cleanUsername,
-      displayName: cleanUsername,
-      provider: 'password',
-      avatarColor: pickAvatarColor(normalized)
-    };
-    saveAccounts([...accounts, { user: newUser, passwordHash: digest }]);
-    saveSessionUser(newUser);
-    return { ok: true, user: newUser };
-  }
-
-  // In 'signin' mode: if account exists, check password; if not found, auto-create for convenience
   if (existing) {
     if (existing.passwordHash !== digest) {
       return { ok: false, error: 'Incorrect password for this username.' };

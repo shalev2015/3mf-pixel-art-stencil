@@ -19,16 +19,13 @@ export function useAuth() {
     setIsAuthLoaded(true);
   }, []);
 
-  const loginWithPassword = useCallback(
-    (username: string, password: string, mode: 'signin' | 'signup' = 'signin'): AuthResult => {
-      const res = authenticateWithPassword(username, password, mode);
-      if (res.ok && res.user) {
-        setUser(res.user);
-      }
-      return res;
-    },
-    []
-  );
+  const loginWithPassword = useCallback((username: string, password: string): AuthResult => {
+    const res = authenticateWithPassword(username, password);
+    if (res.ok && res.user) {
+      setUser(res.user);
+    }
+    return res;
+  }, []);
 
   const logout = useCallback(() => {
     saveSessionUser(null);

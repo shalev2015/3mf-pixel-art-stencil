@@ -6,13 +6,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
 import ThemeToggleButton from '@/components/common/ThemeToggleButton';
 
-/** Full-screen login & sign-up view with Username and Password. */
+/** Full-screen login view with Username and Password. */
 export default function LoginPage() {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const { user, loginWithPassword, logout } = useAuth();
 
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -21,7 +20,7 @@ export default function LoginPage() {
   const handlePasswordSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
-    const res = loginWithPassword(username, password, mode);
+    const res = loginWithPassword(username, password);
     if (!res.ok) {
       setError(res.error || 'Could not sign in.');
       return;
@@ -109,33 +108,6 @@ export default function LoginPage() {
             </div>
           )}
 
-          <div className="login-mode-tabs" role="tablist">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === 'signin'}
-              className={`login-tab-btn${mode === 'signin' ? ' active' : ''}`}
-              onClick={() => {
-                setMode('signin');
-                setError(null);
-              }}
-            >
-              Sign In
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === 'signup'}
-              className={`login-tab-btn${mode === 'signup' ? ' active' : ''}`}
-              onClick={() => {
-                setMode('signup');
-                setError(null);
-              }}
-            >
-              Create Account
-            </button>
-          </div>
-
           {error && (
             <div className="login-error-banner" role="alert">
               {error}
@@ -164,7 +136,7 @@ export default function LoginPage() {
                   id="loginPasswordInput"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Enter your password"
-                  autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                  autoComplete="current-password"
                   required
                   value={password}
                   onChange={e => setPassword(e.target.value)}
@@ -182,7 +154,7 @@ export default function LoginPage() {
             </div>
 
             <button type="submit" className="btn btn-primary login-submit-btn">
-              {mode === 'signin' ? 'Sign In' : 'Create Account & Sign In'}
+              Sign In
             </button>
           </form>
 
